@@ -16,12 +16,13 @@ VERSION=$1
 
 export VERSION
 
-jq --inplace ".version = \"${VERSION}\"" package.json
+jq ".version = \"${VERSION}\"" package.json | tee package.json
 
 git add package.json
 
 git commit -m "version $VERSION"
 
 git tag $VERSION
+
 git push
 git push --tags
