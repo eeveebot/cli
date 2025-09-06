@@ -1,5 +1,5 @@
 {
-  "name": "eevee-cli",
+  "name": "@eeveebot/cli",
   "version": "0.0.16",
   "description": "eevee-bot cli interfaces",
   "homepage": "https://github.com/eeveebot/cli#readme",
