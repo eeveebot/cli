@@ -16,7 +16,9 @@ VERSION=$1
 
 export VERSION
 
-jq ".version = \"${VERSION}\"" package.json | tee package.json
+jq ".version = \"${VERSION}\"" package.json | tee package.json.new
+
+mv package.json.new package.json
 
 git add package.json
 
