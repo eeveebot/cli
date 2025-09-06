@@ -16,6 +16,8 @@ VERSION=$1
 
 export VERSION
 
+jq --inplace ".version = \"${VERSION}\"" package.json
+
 git tag $VERSION
 git push
 git push --tags
