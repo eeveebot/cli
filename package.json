@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eeveebot/cli.git"
+    "url": "https://github.com/eeveebot/cli.git"
   },
   "license": "CC-BY-SA-4.0",
   "author": "Edwin Pers <pers.edwin@gmail.com>",
   "type": "module",
   "main": "src/main.mjs",
   "scripts": {
-    "test": "node_modules/.bin/eslint src/",
+    "test": "eslint src/",
     "start": "node src/main.mjs"
   },
   "dependencies": {
