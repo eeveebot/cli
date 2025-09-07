@@ -43,11 +43,11 @@ const nats = await Nats.connect({
 });
 natsClients.push(nats);
 
-const sub = nats.subscribe('>');
+const sub = nats.subscribe('.>');
 subscriptions.push(sub);
 (async () => {
   for await (const message of sub) {
     // eslint-disable-next-line no-console
-    console.log(`[${message.subject}]\n`, `${JSON.stringify(message.string(), null, 2)}`);
+    console.log(`[${message.subject}] ${message.string()}`);
   }
 })();
