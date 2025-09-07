@@ -40,7 +40,6 @@ if (!natsToken) {
 const nats = await Nats.connect({
   servers: natsHost,
   token: natsToken,
-  port: 4222,
 });
 natsClients.push(nats);
 
