@@ -48,6 +48,6 @@ subscriptions.push(sub);
 (async () => {
   for await (const message of sub) {
     // eslint-disable-next-line no-console
-    console.log(`[${message.subject}][${sub.getProcessed()}]: ${message.string()}`, { producer: "natsClient" });
+    console.log(`[${message.subject}]\n`, `${JSON.stringify(message.string(), null, 2)}`);
   }
 })();
