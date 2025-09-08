@@ -43,7 +43,7 @@ const nats = await Nats.connect({
 });
 natsClients.push(nats);
 
-const sub = nats.subscribe('.>');
+const sub = nats.subscribe('>');
 subscriptions.push(sub);
 (async () => {
   for await (const message of sub) {
