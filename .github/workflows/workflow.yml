@@ -30,6 +30,11 @@ jobs:
   build-container-image:
     needs: publish-gpr
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
