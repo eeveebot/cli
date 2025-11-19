@@ -17,8 +17,8 @@ jobs:
         with:
           node-version: 20
           registry-url: https://npm.pkg.github.com/
-      - run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" | tee -a $HOME/.npmrc \
-      - run: echo "@eeveebot:registry=https://npm.pkg.github.com/" | tee -a $HOME/.npmrc
+      - run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" | tee -a $NPM_CONFIG_USERCONFIG \
+      - run: echo "@eeveebot:registry=https://npm.pkg.github.com/" | tee -a $NPM_CONFIG_USERCONFIG
       - run: npm ci
       - run: npm test
       - run: npm publish
