@@ -11,4 +11,6 @@ done
 
 echo "Starting eevee-monitor"
 
-exec $HOME/.npm-global/bin/eevee-monitor
+exec tail -f /dev/null
+
+# exec $HOME/.npm-global/bin/eevee-monitor
