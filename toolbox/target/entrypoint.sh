@@ -10,7 +10,4 @@ for HOOK in $(ls /eevee/hook.d/init/); do
 done
 
 echo "Starting eevee-monitor"
-
-exec tail -f /dev/null
-
-# exec $HOME/.npm-global/bin/eevee-monitor
+exec $HOME/.npm-global/bin/eevee-monitor
