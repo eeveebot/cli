@@ -23,7 +23,7 @@
     "update-libraries": "npm install --save @eeveebot/libeevee@latest"
   },
   "dependencies": {
-    "@eeveebot/libeevee": "^0.0.8",
+    "@eeveebot/libeevee": "^1.2.11",
     "nats": "^2.29.3",
     "yargs": "^18.0.0"
   },
