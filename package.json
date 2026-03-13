@@ -19,7 +19,8 @@
   "type": "module",
   "main": "app/main.mjs",
   "scripts": {
-    "test": "eslint app/"
+    "test": "eslint app/",
+    "update-libraries": "npm install --save @eeveebot/libeevee@latest"
   },
   "dependencies": {
     "@eeveebot/libeevee": "^0.0.8",
