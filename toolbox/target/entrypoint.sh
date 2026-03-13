@@ -11,4 +11,4 @@ done
 
 echo "Starting eevee-monitor"
 
-exec eevee-monitor
+exec $HOME/.npm-global/bin/eevee-monitor
