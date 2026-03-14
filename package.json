@@ -1,6 +1,6 @@
 {
   "name": "@eeveebot/cli",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "eevee-bot cli interfaces",
   "homepage": "https://github.com/eeveebot/cli#readme",
   "bugs": {
