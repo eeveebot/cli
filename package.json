@@ -1,6 +1,6 @@
 {
   "name": "@eeveebot/cli",
-  "version": "1.2.12",
+  "version": "1.2.13",
   "description": "eevee-bot cli interfaces",
   "homepage": "https://github.com/eeveebot/cli#readme",
   "bugs": {
@@ -23,7 +23,7 @@
     "update-libraries": "npm install --save @eeveebot/libeevee@latest"
   },
   "dependencies": {
-    "@eeveebot/libeevee": "^3.6.2",
+    "@eeveebot/libeevee": "^3.6.3",
     "nats": "^2.29.3",
     "yargs": "^18.0.0"
   },
