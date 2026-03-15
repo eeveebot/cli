@@ -9,6 +9,7 @@ RUN set -exu \
   && adduser \
       --disabled-password \
       --gecos "" \
+      --home /home/eevee \
       --ingroup eevee \
       --uid 1000 \
       eevee
@@ -39,6 +40,9 @@ COPY --chown=eevee:eevee ./target/. /.
 
 USER eevee
 
+ENV HOME /home/eevee
+WORKDIR $HOME
+
 RUN --mount=type=secret,id=GITHUB_TOKEN,env=GITHUB_TOKEN \
   set -exu \
   && echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" | tee -a $HOME/.npmrc \
@@ -48,8 +52,6 @@ RUN --mount=type=secret,id=GITHUB_TOKEN,env=GITHUB_TOKEN \
   && npm install -g "@eeveebot/cli" \
   && rm $HOME/.npmrc \
   && echo "export PATH=\"$HOME/.npm-global/bin:\$PATH\"" | tee -a $HOME/.bashrc
-
-WORKDIR $HOME
 
 ENTRYPOINT [ "/bin/bash" ]
 CMD [ "/entrypoint.sh" ]
