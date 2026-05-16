@@ -36,7 +36,7 @@ interface MonitorArgv {
 export async function handleMonitorCommand(argv: MonitorArgv): Promise<void> {
   const moduleStartTime = Date.now();
   const moduleVersion = JSON.parse(
-    fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
   ).version as string;
 
   log.info('Starting eevee monitor', {
