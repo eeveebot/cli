@@ -14,16 +14,17 @@ jobs:
     env:
       NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://npm.pkg.github.com/
           always-auth: true
           token: ${{secrets.GITHUB_TOKEN}}
-      - run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" | tee -a $NPM_CONFIG_USERCONFIG \
+      - run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" | tee -a $NPM_CONFIG_USERCONFIG
       - run: echo "@eeveebot:registry=https://npm.pkg.github.com/" | tee -a $NPM_CONFIG_USERCONFIG
       - run: npm ci
+      - run: npm run build
       - run: npm test
       - run: npm publish
 

@@ -1,33 +1,45 @@
-import { defineConfig } from "eslint/config";
+import typescriptEslint from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
+import { FlatCompat } from "@eslint/eslintrc";
 import globals from "globals";
 
-export default defineConfig([
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+  recommendedConfig: js.configs.recommended,
+  allConfig: js.configs.all,
+});
+
+export default [
   {
-    linterOptions: {
-      reportUnusedDisableDirectives: "error",
+    ignores: ["**/node_modules", "**/dist", "bin/"],
+  },
+  ...compat.extends("eslint:recommended", "plugin:@typescript-eslint/recommended"),
+  {
+    plugins: {
+      "@typescript-eslint": typescriptEslint,
     },
+
     languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
+      parser: tsParser,
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ["eslint.config.mjs"],
+        },
+        tsconfigRootDir: __dirname,
+        sourceType: "module",
+      },
       globals: {
-				...globals.node,
-			},
+        ...globals.node,
+      },
     },
-  },
-  {
-    files: ["**/*.js", "**/*.mjs"],
-    extends: [
-      js.configs.recommended,
-    ],
+
     rules: {
-      "semi": ["error", "always"],
-      "prefer-const": "error",
-      "no-unused-vars": "error",
-      "no-console": "error",
+      "@typescript-eslint/no-floating-promises": "error",
     },
   },
-  {
-    ignores: ["node_modules/"],
-  },
-]);
+];

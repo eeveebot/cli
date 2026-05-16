@@ -1,13 +1,14 @@
 #!/bin/bash
 
-echo "eevee-toolbox init script"
+# Run init hooks
+if [ -d /eevee/hook.d/init ]; then
+  for HOOK in /eevee/hook.d/init/*; do
+    if [ -x "$HOOK" ]; then
+      echo "Executing hook: ${HOOK}"
+      . "$HOOK"
+    fi
+  done
+fi
 
-echo "Running hooks"
-
-for HOOK in $(ls /eevee/hook.d/init/); do
-  echo "Executing hook: /eevee/hook.d/init/${HOOK}"
-  . "/eevee/hook.d/init/${HOOK}"
-done
-
-echo "Starting eevee-monitor"
-exec $HOME/.npm-global/bin/eevee-monitor
+# Execute the CMD (e.g. eevee monitor --follow)
+exec "$@"
