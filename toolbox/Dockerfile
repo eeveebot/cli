@@ -29,6 +29,7 @@ COPY --chown=node:node ./target/. /.
 USER node
 
 ENV HOME /home/node
+ENV PATH /home/node/.npm-global/bin:$PATH
 WORKDIR /home/node
 
 RUN --mount=type=secret,id=GITHUB_TOKEN,env=GITHUB_TOKEN \
@@ -38,8 +39,7 @@ RUN --mount=type=secret,id=GITHUB_TOKEN,env=GITHUB_TOKEN \
   && mkdir -p $HOME/.npm-global \
   && npm config set prefix $HOME/.npm-global \
   && npm install -g @eeveebot/cli \
-  && rm $HOME/.npmrc \
-  && echo "export PATH=\"$HOME/.npm-global/bin:\$PATH\"" >> $HOME/.bashrc
+  && rm $HOME/.npmrc
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 CMD [ "eevee", "monitor", "--follow" ]
