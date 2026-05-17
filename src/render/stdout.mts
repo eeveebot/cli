@@ -81,9 +81,12 @@ export class StdoutRenderer implements MonitorRenderer {
     this.noColor = options.noColor ?? false;
     this.noSummary = options.noSummary ?? false;
 
-    // Disable chalk if --no-color
+    // Force ANSI colors on even without a TTY (container stdout via kubectl logs)
+    // Only disable when --no-color is explicitly set
     if (this.noColor) {
       chalk.level = 0;
+    } else {
+      chalk.level = 1;
     }
   }
 
