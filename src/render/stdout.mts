@@ -1,7 +1,11 @@
 'use strict';
 
 import chalk from 'chalk';
+import AsciiTable from 'ascii-table';
 import { MonitorRenderer, MonitorState, MonitorEvent, ModuleState, ConnectorState } from '../monitor/types.mjs';
+
+/** Maximum visible chars for module name column (truncated with …) */
+const MAX_MODULE_NAME_LEN = 15;
 
 /** Format a number compactly: 1.2k for counts > 999, raw for smaller */
 function formatCount(n: number): string {
@@ -27,6 +31,20 @@ function formatUptime(ms: number): string {
 function formatTime(ts: number): string {
   const d = new Date(ts);
   return d.toTimeString().slice(0, 8);
+}
+
+/** Format latency p50/p95 as compact string */
+function formatLatency(p50: number | null, p95: number | null): string {
+  if (p50 === null && p95 === null) return '—';
+  const p50Str = p50 !== null ? `${p50}` : '—';
+  const p95Str = p95 !== null ? `${p95}` : '—';
+  return `${p50Str}/${p95Str}ms`;
+}
+
+/** Truncate a module name to MAX_MODULE_NAME_LEN with ellipsis */
+function truncateName(name: string): string {
+  if (name.length <= MAX_MODULE_NAME_LEN) return name;
+  return name.slice(0, MAX_MODULE_NAME_LEN - 1) + '…';
 }
 
 /** Map event types to chalk color functions */
@@ -110,29 +128,54 @@ export class StdoutRenderer implements MonitorRenderer {
     console.log(this.noColor ? separator : chalk.dim(separator));
 
     // Module table
+    const table = new AsciiTable();
+    table.removeBorder();
+    table.setHeading('Module', 'Ver', 'Uptime', 'Msgs', 'Cmds', 'Errs', 'Mem', 'MsgLat', 'CmdLat');
+
+    // Right-align numeric columns (1-indexed)
+    table.setAlign(4, AsciiTable.RIGHT);  // Msgs
+    table.setAlign(5, AsciiTable.RIGHT);  // Cmds
+    table.setAlign(6, AsciiTable.RIGHT);  // Errs
+
     for (const mod of modules) {
-      const status = this.formatModuleStatus(mod);
+      const statusDot = this.formatModuleStatus(mod);
+      const name = `${statusDot} ${truncateName(mod.name)}`;
       const uptime = mod.status === 'down' ? 'down' : formatUptime(mod.uptime);
       const msgs = formatCount(mod.messageCount);
-      const line = `  ${mod.name} ${status} ${mod.version} ${uptime} ${msgs}msg`;
-      console.log(this.noColor ? line : this.colorizeModuleLine(mod, line));
+      const cmds = formatCount(mod.commandCount);
+      const errs = String(mod.errorCount);
+      const mem = `${mod.memoryRssMb}MB`;
+      const msgLat = formatLatency(mod.messageP50, mod.messageP95);
+      const cmdLat = formatLatency(mod.commandP50, mod.commandP95);
+
+      table.addRow(name, mod.version, uptime, msgs, cmds, errs, mem, msgLat, cmdLat);
     }
 
-    // Connector section
+    // Print the table, applying dim to heading row
+    const tableStr = table.toString();
+    const tableLines = tableStr.split('\n');
+    for (let i = 0; i < tableLines.length; i++) {
+      // Lines 0-1 are heading + separator — dim them
+      if (i <= 1 && !this.noColor) {
+        console.log(chalk.dim(tableLines[i]));
+      } else {
+        console.log(tableLines[i]);
+      }
+    }
+
+    // Connector section (freeform)
     if (connectors.length > 0) {
       console.log('');
       for (const conn of connectors) {
         const status = this.formatConnectorStatus(conn);
         const channels = conn.channels.length > 0 ? `  ${conn.channels.join(',')}` : '';
-        const line = `  ${conn.platform.toUpperCase()}: ${conn.network.padEnd(12)} ${status}${channels}`;
+        const line = `  ${conn.platform.toUpperCase()}: ${conn.network} ${status}${channels}`;
         console.log(this.noColor ? line : this.colorizeConnectorLine(conn, line));
       }
     }
 
     console.log(this.noColor ? separator : chalk.dim(separator));
   }
-
-
 
   stop(): void {
     const line = this.noColor
@@ -165,12 +208,6 @@ export class StdoutRenderer implements MonitorRenderer {
       suffix = ` (${ago}m ago)`;
     }
     return chalk.red(`${base}${suffix}`);
-  }
-
-  private colorizeModuleLine(mod: ModuleState, line: string): string {
-    if (mod.status === 'down') return chalk.dim(line);
-    if (mod.status === 'degraded') return chalk.yellow(line);
-    return line;
   }
 
   private colorizeConnectorLine(conn: ConnectorState, line: string): string {

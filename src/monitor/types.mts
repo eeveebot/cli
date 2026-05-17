@@ -29,8 +29,14 @@ export interface ModuleState {
   status: ModuleStatus;
   uptime: number;                // ms
   messageCount: number;
-  lastSeen: number;              // timestamp (Date.now())
+  commandCount: number;
   errorCount: number;
+  memoryRssMb: number;
+  messageP50: number | null;     // ms, from message_processing_seconds histogram
+  messageP95: number | null;     // ms
+  commandP50: number | null;     // ms, from command_processing_seconds histogram
+  commandP95: number | null;     // ms
+  lastSeen: number;              // timestamp (Date.now())
   previousUptime?: number;       // for restart detection
   previousErrorCount?: number;   // for error delta detection
 }

@@ -11,6 +11,7 @@ import {
   StatsResponse,
   MonitorConfig,
 } from './types.mjs';
+import { parseHistograms, calculatePercentileFromBuckets } from './histogram.mjs';
 
 /** Manages in-memory state of all observed modules and connectors. */
 export class MonitorStateTracker {
@@ -307,11 +308,36 @@ export class MonitorStateTracker {
     const uptimeSeconds = typeof stats.uptime_seconds === 'number' ? stats.uptime_seconds : 0;
     const uptime = uptimeSeconds * 1000;
     const version = typeof stats.version === 'string' ? stats.version : '—';
+    const memoryRssMb = typeof stats.memory_rss_mb === 'number' ? stats.memory_rss_mb : 0;
 
     // Parse counters from prometheus_metrics text blob
     const promText = typeof stats.prometheus_metrics === 'string' ? stats.prometheus_metrics : '';
     const messageCount = parsePrometheusCounter(promText, 'messages_total', { result: 'processed' });
+    const commandCount = parsePrometheusCounter(promText, 'commands_total', { result: 'success' });
     const errorCount = parsePrometheusCounter(promText, 'errors_total');
+
+    // Parse histograms for latency percentiles
+    const histograms = parseHistograms(promText);
+    let messageP50: number | null = null;
+    let messageP95: number | null = null;
+    let commandP50: number | null = null;
+    let commandP95: number | null = null;
+
+    const msgHist = histograms.get('message_processing_seconds');
+    if (msgHist && msgHist.count > 0) {
+      const p50 = calculatePercentileFromBuckets(msgHist.buckets, msgHist.count, 0.5);
+      const p95 = calculatePercentileFromBuckets(msgHist.buckets, msgHist.count, 0.95);
+      if (p50 !== null) messageP50 = Math.round(p50 * 1000);
+      if (p95 !== null) messageP95 = Math.round(p95 * 1000);
+    }
+
+    const cmdHist = histograms.get('command_processing_seconds');
+    if (cmdHist && cmdHist.count > 0) {
+      const p50 = calculatePercentileFromBuckets(cmdHist.buckets, cmdHist.count, 0.5);
+      const p95 = calculatePercentileFromBuckets(cmdHist.buckets, cmdHist.count, 0.95);
+      if (p50 !== null) commandP50 = Math.round(p50 * 1000);
+      if (p95 !== null) commandP95 = Math.round(p95 * 1000);
+    }
 
     // Determine status
     let status: ModuleStatus = 'unknown';
@@ -329,8 +355,14 @@ export class MonitorStateTracker {
       status,
       uptime,
       messageCount,
-      lastSeen: now,
+      commandCount,
       errorCount,
+      memoryRssMb,
+      messageP50,
+      messageP95,
+      commandP50,
+      commandP95,
+      lastSeen: now,
     };
   }
 
