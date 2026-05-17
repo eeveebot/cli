@@ -69,6 +69,7 @@ export interface MonitorEvent {
   source: string;                // module/connector name
   detail: string;                // human-readable summary
   raw?: unknown;                 // original NATS payload
+  suppressed?: boolean;          // if true, hide from stdout renderer (still processed for state)
 }
 
 // ── Stats response (from other modules) ──────────────────────────────────

@@ -79,6 +79,8 @@ export class StdoutRenderer implements MonitorRenderer {
   }
 
   onEvent(event: MonitorEvent): void {
+    if (event.suppressed) return;
+
     const time = formatTime(event.timestamp);
     const prefix = this.noColor ? `${time} ▸` : chalk.dim(`${time} ▸`);
     const detail = colorizeEvent(event.type, event.detail, this.noColor);

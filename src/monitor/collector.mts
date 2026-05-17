@@ -98,10 +98,6 @@ export class MonitorCollector {
   private async subscribeToStatsEmit(): Promise<void> {
     const sub = this.nats.subscribe('stats.emit.>', (subject, message) => {
       try {
-        // Skip self-generated traffic — handled by summary cycle
-        if (subject === 'stats.emit.request') return;
-        if (subject.startsWith('stats.emit.response.')) return;
-
         const payload = message.string();
         if (this.forwardRaw(subject, payload)) return;
 
@@ -109,6 +105,10 @@ export class MonitorCollector {
         if (!data.module) return;
 
         const events = this.state.updateAndDetect(data.module, data.stats);
+        // Suppress stats.emit-derived events from stdout display
+        for (const event of events) {
+          event.suppressed = true;
+        }
         this.emitEvents(events);
       } catch (error) {
         log.error('Failed to process stats emission', {
@@ -378,6 +378,9 @@ export class MonitorCollector {
     try {
       // 1. Detect stale modules before requesting fresh stats
       const staleEvents = this.state.detectStaleModules();
+      for (const event of staleEvents) {
+        event.suppressed = true;
+      }
       this.emitEvents(staleEvents);
 
       // 2. Subscribe to a unique reply channel
@@ -414,6 +417,9 @@ export class MonitorCollector {
 
       // 5. Update state from responses
       const connectorEvents = this.state.updateFromStatsResponses(responses);
+      for (const event of connectorEvents) {
+        event.suppressed = true;
+      }
       this.emitEvents(connectorEvents);
       this.state.recordSummaryInterval();
 
@@ -427,6 +433,7 @@ export class MonitorCollector {
             type: 'module_start',
             source: name,
             detail: `module discovered: ${name}`,
+            suppressed: true,
           });
         }
         this.emitEvents(discoveryEvents);
