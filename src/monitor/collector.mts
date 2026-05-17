@@ -98,7 +98,8 @@ export class MonitorCollector {
   private async subscribeToStatsEmit(): Promise<void> {
     const sub = this.nats.subscribe('stats.emit.>', (subject, message) => {
       try {
-        // Skip stats.emit.response.* — handled by summary cycle's own subscription
+        // Skip self-generated traffic — handled by summary cycle
+        if (subject === 'stats.emit.request') return;
         if (subject.startsWith('stats.emit.response.')) return;
 
         const payload = message.string();
