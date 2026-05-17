@@ -94,11 +94,13 @@ export class MonitorStateTracker {
 
   /**
    * Batch-update state from stats responses collected during an interval cycle.
-   * Does NOT produce anomaly events — the summary is a snapshot, not event-driven.
-   * Anomaly detection happens in updateAndDetect for passive emissions.
+   * Produces connector lifecycle events when connector data is found in responses.
+   * Module anomaly detection happens in updateAndDetect for passive emissions.
    */
-  updateFromStatsResponses(responses: StatsResponse[]): void {
+  updateFromStatsResponses(responses: StatsResponse[]): MonitorEvent[] {
     const now = Date.now();
+    const events: MonitorEvent[] = [];
+
     for (const resp of responses) {
       if (!resp.module) continue;
 
@@ -111,7 +113,14 @@ export class MonitorStateTracker {
       }
 
       this.modules.set(resp.module, current);
+
+      // Extract connector state from connector module stats
+      const connectorEvents = this.parseConnectorsFromStats(resp.module, resp.stats);
+      events.push(...connectorEvents);
     }
+
+    this.eventsProcessed += events.length;
+    return events;
   }
 
   // ── Stale module detection ──────────────────────────────────────────
@@ -246,6 +255,44 @@ export class MonitorStateTracker {
       if (state.status === 'connected') connected++;
     }
     return { connected, total: this.connectors.size };
+  }
+
+  // ── Connector extraction from stats ────────────────────────────────
+
+  /**
+   * Parse connector state from a stats response that includes connector data.
+   * connector-irc includes a `connector` array in its stats payload.
+   * Each entry: { name, connected, channels (count), host, nick, reconnects, ... }
+   */
+  private parseConnectorsFromStats(
+    moduleName: string,
+    stats: StatsResponse['stats'],
+  ): MonitorEvent[] {
+    const events: MonitorEvent[] = [];
+
+    // Only connector modules have connector data
+    if (!moduleName.startsWith('connector-')) return events;
+
+    const connectorData = stats.connector;
+    if (!Array.isArray(connectorData)) return events;
+
+    // Derive platform from module name: connector-irc → irc
+    const platform = moduleName.replace('connector-', '');
+
+    for (const conn of connectorData) {
+      const network = typeof conn.name === 'string' ? conn.name : 'unknown';
+      const connected = conn.connected === true;
+      const channelCount = typeof conn.channels === 'number' ? conn.channels : 0;
+      const status: ConnectorStatus = connected ? 'connected' : 'disconnected';
+
+      // Build a channels array from the count (we don't have names, just the count)
+      const channels: string[] = channelCount > 0 ? [`<${channelCount} channels>`] : [];
+
+      const connEvents = this.updateConnector(platform, network, status, channels);
+      events.push(...connEvents);
+    }
+
+    return events;
   }
 
   // ── Private helpers ─────────────────────────────────────────────────

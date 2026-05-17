@@ -21,6 +21,7 @@ export class MonitorCollector {
   private intervalTimer: ReturnType<typeof setInterval> | null = null;
   private isRunning = false;
   private readonly isRawMode: boolean;
+  private isFirstCycle = true;
 
   constructor(
     nats: InstanceType<typeof NatsClient>,
@@ -51,6 +52,7 @@ export class MonitorCollector {
     await this.subscribeToCommandRegistrations();
     await this.subscribeToBroadcastRegistrations();
     await this.subscribeToHelpUpdates();
+    await this.subscribeToControlRegistrations();
 
     // Start the renderer with current (empty) state
     this.renderer.start(this.state.getState());
@@ -96,6 +98,9 @@ export class MonitorCollector {
   private async subscribeToStatsEmit(): Promise<void> {
     const sub = this.nats.subscribe('stats.emit.>', (subject, message) => {
       try {
+        // Skip stats.emit.response.* — handled by summary cycle's own subscription
+        if (subject.startsWith('stats.emit.response.')) return;
+
         const payload = message.string();
         if (this.forwardRaw(subject, payload)) return;
 
@@ -293,6 +298,63 @@ export class MonitorCollector {
     this.subscriptions.push(removeSub);
   }
 
+  /** Subscribe to control.registerCommands/Broadcasts for router re-registration sweeps */
+  private async subscribeToControlRegistrations(): Promise<void> {
+    const commandsSub = this.nats.subscribe('control.registerCommands.>', (subject, message) => {
+      try {
+        const payload = message.string();
+        if (this.forwardRaw(subject, payload)) return;
+
+        // Subject: control.registerCommands or control.registerCommands.<name>
+        const parts = subject.split('.');
+        const name = parts.length > 2 ? parts.slice(2).join('.') : null;
+        const detail = name
+          ? `command re-registration requested: ${name}`
+          : 'router command re-registration sweep';
+
+        this.emitEvents([{
+          timestamp: Date.now(),
+          type: 'registration',
+          source: 'router',
+          detail,
+        }]);
+      } catch (error) {
+        log.error('Failed to process control.registerCommands', {
+          producer: 'monitor',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+    this.subscriptions.push(commandsSub);
+
+    const broadcastsSub = this.nats.subscribe('control.registerBroadcasts.>', (subject, message) => {
+      try {
+        const payload = message.string();
+        if (this.forwardRaw(subject, payload)) return;
+
+        // Subject: control.registerBroadcasts or control.registerBroadcasts.<name>
+        const parts = subject.split('.');
+        const name = parts.length > 2 ? parts.slice(2).join('.') : null;
+        const detail = name
+          ? `broadcast re-registration requested: ${name}`
+          : 'router broadcast re-registration sweep';
+
+        this.emitEvents([{
+          timestamp: Date.now(),
+          type: 'registration',
+          source: 'router',
+          detail,
+        }]);
+      } catch (error) {
+        log.error('Failed to process control.registerBroadcasts', {
+          producer: 'monitor',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+    this.subscriptions.push(broadcastsSub);
+  }
+
   // ── Interval & stats collection ─────────────────────────────────────
 
   /** Start the periodic summary interval */
@@ -350,8 +412,25 @@ export class MonitorCollector {
       }
 
       // 5. Update state from responses
-      this.state.updateFromStatsResponses(responses);
+      const connectorEvents = this.state.updateFromStatsResponses(responses);
+      this.emitEvents(connectorEvents);
       this.state.recordSummaryInterval();
+
+      // 5b. First cycle: emit discovery events for all discovered modules
+      if (this.isFirstCycle) {
+        const moduleState = this.state.getState();
+        const discoveryEvents: MonitorEvent[] = [];
+        for (const [name] of moduleState.modules) {
+          discoveryEvents.push({
+            timestamp: Date.now(),
+            type: 'module_start',
+            source: name,
+            detail: `module discovered: ${name}`,
+          });
+        }
+        this.emitEvents(discoveryEvents);
+        this.isFirstCycle = false;
+      }
 
       // 6. Render the summary
       this.renderer.onInterval(this.state.getState());
