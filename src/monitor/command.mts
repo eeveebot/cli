@@ -11,6 +11,9 @@ import {
   initializeSystemMetrics,
   setupHttpServer,
 } from '@eeveebot/libeevee';
+
+// Suppress NATS per-message logging — monitor output is the summary blocks, not log chatter
+log.level = 'warn';
 import { loadMonitorConfig } from './config.mjs';
 import { MonitorStateTracker } from './state.mjs';
 import { MonitorCollector } from './collector.mjs';
